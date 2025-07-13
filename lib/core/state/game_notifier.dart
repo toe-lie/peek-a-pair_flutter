@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:peek_a_pair/core/models/card_model.dart';
 
+import '../models/level_model.dart';
+import '../models/theme_model.dart';
 import 'game_state_model.dart'; // Adjust path
 
 part 'game_notifier.g.dart';
@@ -15,35 +17,42 @@ class GameNotifier extends _$GameNotifier {
     return GameState();
   }
 
-  void setupGame(List<String> cardValues) {
+  void setupGame(LevelModel level, ThemeModel theme) {
+    final cardValues = level.cardValues;
     List<CardModel> newCards = [];
     int cardId = 0;
 
     for (var value in cardValues) {
+      final imagePath = 'assets/images/cards/${theme.id}/$value.png';
+
       newCards.add(
         CardModel(
-          id: cardId++,
+          id: '${theme.id}_${level.levelNumber}_${value}_1',
           value: value,
-          imagePath: 'assets/images/forest-friends/$value.png',
+          imagePath: imagePath,
         ),
       );
       newCards.add(
         CardModel(
-          id: cardId++,
+          id: '${theme.id}_${level.levelNumber}_${value}_2',
           value: value,
-          imagePath: 'assets/images/forest-friends/$value.png',
+          imagePath: imagePath,
         ),
       );
     }
     newCards.shuffle(Random());
 
     // Set the initial game state
-    state = GameState(cards: newCards, moveCount: 0, isGameWon: false);
+    state = GameState(
+      cards: newCards,
+      moveCount: 0,
+      moveLimit: level.moveLimit,
+      isGameWon: false,
+    );
   }
 
-  void onCardTapped(int cardId) {
-    // If the game is already won, do nothing
-    if (state.isGameWon) return;
+  void onCardTapped(String cardId) {
+    if (state.isGameWon || state.isGameOver) return;
 
     final flippedCards = state.cards
         .where((card) => card.isFlipped && !card.isMatched)
@@ -76,7 +85,8 @@ class GameNotifier extends _$GameNotifier {
 
     if (currentlyFlipped.length == 2) {
       // Increment move count when two cards are flipped
-      state = state.copyWith(moveCount: state.moveCount + 1);
+      final newMoveCount = state.moveCount + 1;
+      state = state.copyWith(moveCount: newMoveCount);
 
       final card1 = currentlyFlipped[0];
       final card2 = currentlyFlipped[1];
@@ -114,6 +124,12 @@ class GameNotifier extends _$GameNotifier {
           }).toList();
           state = state.copyWith(cards: newCards);
         });
+      }
+
+      if (state.moveLimit != null &&
+          newMoveCount >= state.moveLimit! &&
+          !state.isGameWon) {
+        state = state.copyWith(isGameOver: true);
       }
     }
   }

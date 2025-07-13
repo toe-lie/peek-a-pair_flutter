@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/services/storage_service.dart';
-import '../../game/view/game_screen.dart';
-import '../../themes/view/theme_selection_screen.dart';
+import '../../../core/data/game_data.dart';
+import '../../map/view/world_map_screen.dart';
 
 class TitleScreen extends ConsumerWidget {
   const TitleScreen({super.key});
@@ -54,35 +53,13 @@ class TitleScreen extends ConsumerWidget {
                   icon: Icons.play_arrow_rounded,
                   label: 'Play Game',
                   onPressed: () async {
-                    final storageService = await ref.read(
-                      localStorageServiceProvider.future,
+                    final firstWorld = allWorlds[0];
+
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => WorldMapScreen(theme: firstWorld),
+                      ),
                     );
-                    final lastThemeId = storageService.getLastTheme();
-
-                    if (lastThemeId != null) {
-                      // If we have a saved theme, find it in our list of themes
-                      final themes = ThemeSelectionScreen()
-                          .themes; // Quick way to get themes
-                      final lastTheme = themes.firstWhere(
-                        (t) => t.id == lastThemeId,
-                      );
-
-                      if (!context.mounted) return;
-                      // Navigate directly to the GameScreen with that theme
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => GameScreen(theme: lastTheme),
-                        ),
-                      );
-                    } else {
-                      if (!context.mounted) return;
-                      // If no theme is saved, go to the selection screen
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => ThemeSelectionScreen(),
-                        ),
-                      );
-                    }
                   },
                 ),
                 const SizedBox(height: 16),
@@ -91,11 +68,11 @@ class TitleScreen extends ConsumerWidget {
                   icon: Icons.palette_rounded,
                   label: 'Themes',
                   onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => ThemeSelectionScreen(),
-                      ),
-                    );
+                    // Navigator.of(context).push(
+                    //   MaterialPageRoute(
+                    //     builder: (context) => ThemeSelectionScreen(),
+                    //   ),
+                    // );
                   },
                 ),
 

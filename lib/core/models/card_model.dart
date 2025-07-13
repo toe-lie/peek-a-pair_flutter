@@ -2,7 +2,7 @@
 
 class CardModel {
   // A unique identifier for this specific card instance
-  final int id;
+  final String id;
   // The value to match with another card (e.g., 'fox', 'owl')
   final String value;
   // The path to the card's face image

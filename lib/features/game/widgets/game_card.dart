@@ -1,13 +1,20 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:peek_a_pair/core/models/card_model.dart'; // Import the model
+import 'package:peek_a_pair/core/models/theme_model.dart';
 import 'package:peek_a_pair/utils/color_extensions.dart'; // Import our extension
 
 class GameCard extends StatefulWidget {
   final CardModel card;
-  final VoidCallback onTap; // Callback for when the card is tapped
+  final ThemeModel theme;
+  final VoidCallback onTap;
 
-  const GameCard({super.key, required this.card, required this.onTap});
+  const GameCard({
+    super.key,
+    required this.card,
+    required this.theme,
+    required this.onTap,
+  });
 
   @override
   State<GameCard> createState() => _GameCardState();
@@ -78,10 +85,24 @@ class _GameCardState extends State<GameCard>
     if (side == "front") {
       content = Image.asset(widget.card.imagePath, fit: BoxFit.contain);
     } else {
-      content = Image.asset(
-        'assets/images/card-back.png',
-      ); // You'll need a card back image
+      content = Image.asset(widget.theme.cardBackAsset);
     }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.applyOpacity(0.2),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(2, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(borderRadius: BorderRadius.circular(8), child: content),
+    );
 
     return Container(
       padding: const EdgeInsets.all(8.0),

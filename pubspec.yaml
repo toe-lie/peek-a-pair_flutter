@@ -22,6 +22,9 @@ dependencies:
   riverpod_annotation: ^2.6.1
   flutter_riverpod: ^2.6.1
   shared_preferences: ^2.5.3
+  flutter_staggered_animations: ^1.1.1
+  confetti: ^0.8.0
+  lottie: ^3.3.1
 
 dev_dependencies:
   flutter_test:
@@ -47,7 +50,15 @@ flutter:
   generate: true
   assets:
     - assets/images/
-    - assets/images/forest-friends/
+    - assets/images/maps/
+    - assets/images/nodes/
+    - assets/images/ui/
+    - assets/images/cards/
+    - assets/images/cards/forest-friends/
+    - assets/images/cards/sweet-street/
+    - assets/images/backgrounds/
+    - assets/lottie/
+    - assets/animations/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
