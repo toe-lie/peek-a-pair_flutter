@@ -1,26 +1,26 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'game_notifier.dart';
+part of 'sound_service.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$gameNotifierHash() => r'908113fb0023302b61f81013cb0104d9aa7b6335';
+String _$soundServiceHash() => r'd6a5cd226fe15c1c5efddf3e1463ef0d264ec2a1';
 
-/// See also [GameNotifier].
-@ProviderFor(GameNotifier)
-final gameNotifierProvider =
-    AutoDisposeNotifierProvider<GameNotifier, GameState>.internal(
-      GameNotifier.new,
-      name: r'gameNotifierProvider',
+/// See also [SoundService].
+@ProviderFor(SoundService)
+final soundServiceProvider =
+    AsyncNotifierProvider<SoundService, SoundSettings>.internal(
+      SoundService.new,
+      name: r'soundServiceProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$gameNotifierHash,
+          : _$soundServiceHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
-typedef _$GameNotifier = AutoDisposeNotifier<GameState>;
+typedef _$SoundService = AsyncNotifier<SoundSettings>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

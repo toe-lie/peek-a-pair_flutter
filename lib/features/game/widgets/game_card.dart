@@ -2,17 +2,21 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:peek_a_pair/core/models/card_model.dart'; // Import the model
 import 'package:peek_a_pair/core/models/theme_model.dart';
-import 'package:peek_a_pair/utils/color_extensions.dart'; // Import our extension
+import 'package:peek_a_pair/utils/color_extensions.dart';
+
+import '../../../core/state/game_state_model.dart'; // Import our extension
 
 class GameCard extends StatefulWidget {
   final CardModel card;
   final ThemeModel theme;
+  final ShufflePhase shufflePhase;
   final VoidCallback onTap;
 
   const GameCard({
     super.key,
     required this.card,
     required this.theme,
+    required this.shufflePhase,
     required this.onTap,
   });
 
@@ -54,27 +58,38 @@ class _GameCardState extends State<GameCard>
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap, // Use the callback passed from the parent
-      child: AnimatedBuilder(
-        animation: _animation,
-        builder: (BuildContext context, Widget? child) {
-          final angle = _animation.value * pi;
+    double opacity = 1.0;
+    if (widget.shufflePhase == ShufflePhase.fadingOut) {
+      opacity = 0.0;
+    } else if (widget.shufflePhase == ShufflePhase.fadingIn) {
+      opacity = 1.0;
+    }
 
-          final Widget childToShow = angle < pi / 2
-              ? _buildCardSide("back") // The card back
-              : Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.rotationY(pi),
-                  child: _buildCardSide("front"), // The card front
-                );
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 400),
+      opacity: opacity,
+      child: GestureDetector(
+        onTap: widget.onTap, // Use the callback passed from the parent
+        child: AnimatedBuilder(
+          animation: _animation,
+          builder: (BuildContext context, Widget? child) {
+            final angle = _animation.value * pi;
 
-          return Transform(
-            transform: Matrix4.rotationY(angle),
-            alignment: Alignment.center,
-            child: childToShow,
-          );
-        },
+            final Widget childToShow = angle < pi / 2
+                ? _buildCardSide("back") // The card back
+                : Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.rotationY(pi),
+                    child: _buildCardSide("front"), // The card front
+                  );
+
+            return Transform(
+              transform: Matrix4.rotationY(angle),
+              alignment: Alignment.center,
+              child: childToShow,
+            );
+          },
+        ),
       ),
     );
   }
@@ -102,23 +117,6 @@ class _GameCardState extends State<GameCard>
         ],
       ),
       child: ClipRRect(borderRadius: BorderRadius.circular(8), child: content),
-    );
-
-    return Container(
-      padding: const EdgeInsets.all(8.0),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.applyOpacity(0.2),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(2, 2),
-          ),
-        ],
-      ),
-      child: content,
     );
   }
 }

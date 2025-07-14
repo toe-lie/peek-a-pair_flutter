@@ -7,6 +7,7 @@ import 'package:peek_a_pair/core/state/game_notifier.dart';
 import 'package:peek_a_pair/features/game/view/game_screen.dart';
 
 import '../../../core/models/theme_model.dart';
+import '../../../core/services/sound_service.dart';
 
 class WinDialogWidget extends ConsumerStatefulWidget {
   final ThemeModel theme;
@@ -132,7 +133,10 @@ class _WinDialogWidgetState extends ConsumerState<WinDialogWidget> {
             IconButton.filledTonal(
               icon: const Icon(Icons.map_rounded),
               onPressed: () {
-                _timer?.cancel(); // Stop the timer
+                _timer?.cancel();
+                ref
+                    .read(soundServiceProvider.notifier)
+                    .playMusic(GameMusic.mainTheme);
                 Navigator.of(context).pop();
                 Navigator.of(context).pop();
               },

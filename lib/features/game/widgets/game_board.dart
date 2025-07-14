@@ -9,6 +9,7 @@ import 'package:peek_a_pair/features/game/widgets/win_dialog_widget.dart';
 import 'package:peek_a_pair/utils/color_extensions.dart';
 
 import '../../../core/models/level_model.dart';
+import '../../../core/services/sound_service.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/state/game_state_model.dart';
 import '../../../core/data/game_data.dart';
@@ -62,6 +63,8 @@ class _GameBoardState extends ConsumerState<GameBoard> {
       if (next.isGameWon && !(previous?.isGameWon ?? false)) {
         _confettiController.play(); // Play the confetti!
 
+        ref.read(soundServiceProvider.notifier).playSfx(SoundEffect.win);
+
         final starsEarned = _calculateStars(next.moveCount, next.moveLimit);
         ref.read(localStorageServiceProvider.future).then((service) {
           service.saveLevelProgress(widget.level.id, starsEarned);
@@ -88,14 +91,24 @@ class _GameBoardState extends ConsumerState<GameBoard> {
       }
 
       if (next.isGameOver && !(previous?.isGameOver ?? false)) {
+        String title = "Game Over! 😟";
+        String content = "Better luck next time!";
+
+        if (next.timerInSeconds != null && (next.secondsRemaining ?? 0) <= 0) {
+          title = "Time's Up!";
+          content = "Be a little quicker next time!";
+        } else if (next.moveLimit != null &&
+            next.moveCount >= next.moveLimit!) {
+          title = "Out of Moves!";
+          content = "Be more strategic next time to beat the level!";
+        }
+
         showDialog(
           context: context,
           barrierDismissible: false,
           builder: (context) => AlertDialog(
-            title: const Text("Game Over! 😟"),
-            content: const Text(
-              "You've run out of moves. Better luck next time!",
-            ),
+            title: Text(title),
+            content: Text(content),
             actions: [
               TextButton(
                 onPressed: () {
@@ -140,6 +153,11 @@ class _GameBoardState extends ConsumerState<GameBoard> {
               itemCount: gameCards.length,
               itemBuilder: (BuildContext context, int index) {
                 final card = gameCards[index];
+                ShufflePhase currentCardPhase = ShufflePhase.none;
+                if (gameState.shuffleState.cardIds.contains(card.id)) {
+                  // If it is, its phase is whatever the global shuffle phase is.
+                  currentCardPhase = gameState.shuffleState.phase;
+                }
 
                 // Wrap each card in animation configuration and widgets
                 return AnimationConfiguration.staggeredGrid(
@@ -152,6 +170,7 @@ class _GameBoardState extends ConsumerState<GameBoard> {
                         key: ValueKey(card.id),
                         card: card,
                         theme: widget.theme,
+                        shufflePhase: currentCardPhase,
                         onTap: () {
                           ref
                               .read(gameNotifierProvider.notifier)

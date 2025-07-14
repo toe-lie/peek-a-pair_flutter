@@ -4,6 +4,7 @@ import 'package:peek_a_pair/features/map/widgets/level_node_widget.dart';
 
 import '../../../core/models/level_model.dart';
 import '../../../core/models/theme_model.dart';
+import '../../../core/services/sound_service.dart';
 import '../../../core/services/storage_service.dart';
 import '../../game/view/game_screen.dart';
 import '../widgets/path_painter.dart';
@@ -105,9 +106,7 @@ class _WorldMapScreenState extends ConsumerState<WorldMapScreen> {
                                 ),
                               ),
                             )
-                            .then((_) {
-                              setState(() {});
-                            });
+                            .then((_) {});
                       },
                     ),
                   );
@@ -171,6 +170,38 @@ class _WorldMapScreenState extends ConsumerState<WorldMapScreen> {
                     ],
                   ),
                 ),
+
+                Positioned(
+                  top: 16,
+                  right: 16,
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      final soundSettings = ref.watch(soundServiceProvider);
+
+                      return soundSettings.when(
+                        data: (settings) => IconButton.filledTonal(
+                          icon: Icon(
+                            settings.isMuted
+                                ? Icons.volume_off_rounded
+                                : Icons.volume_up_rounded,
+                          ),
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => const SettingsDialog(),
+                            );
+                          },
+                        ),
+                        loading: () => const CircleAvatar(
+                          backgroundColor: Colors.transparent,
+                        ),
+                        error: (_, __) => const CircleAvatar(
+                          backgroundColor: Colors.transparent,
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ],
             ),
           );
@@ -223,6 +254,41 @@ class _WorldMapScreenState extends ConsumerState<WorldMapScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class SettingsDialog extends ConsumerWidget {
+  const SettingsDialog({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final soundSettings = ref.watch(soundServiceProvider);
+
+    return AlertDialog(
+      title: const Text("Settings"),
+      content: soundSettings.when(
+        data: (settings) => ListTile(
+          leading: const Icon(Icons.volume_up_rounded),
+          title: const Text("Sound"),
+          // The Switch reflects the current state and can toggle it
+          trailing: Switch(
+            value: !settings.isMuted,
+            onChanged: (value) {
+              // Call the toggle method in our service
+              ref.read(soundServiceProvider.notifier).toggleMute();
+            },
+          ),
+        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, s) => const Text("Error loading settings"),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text("Done"),
+        ),
+      ],
     );
   }
 }

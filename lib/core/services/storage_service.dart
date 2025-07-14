@@ -12,6 +12,7 @@ class LocalStorageService {
   LocalStorageService(this._prefs);
 
   static const _lastThemeKey = 'last_played_theme';
+  static const _muteKey = 'is_muted';
 
   final _progressUpdateController = StreamController<String>.broadcast();
 
@@ -43,6 +44,14 @@ class LocalStorageService {
   }
 
   Stream<String> get onProgressUpdated => _progressUpdateController.stream;
+
+  Future<void> saveMuteState(bool isMuted) async {
+    await _prefs.setBool(_muteKey, isMuted);
+  }
+
+  bool getMuteState() {
+    return _prefs.getBool(_muteKey) ?? false;
+  }
 
   void dispose() {
     _progressUpdateController.close();

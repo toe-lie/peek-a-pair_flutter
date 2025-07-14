@@ -5,40 +5,75 @@ import 'package:peek_a_pair/utils/color_extensions.dart';
 
 import '../../../core/models/level_model.dart';
 import '../../../core/models/theme_model.dart';
+import '../../../core/services/sound_service.dart';
 import '../../../core/state/game_notifier.dart';
 import '../../../core/state/game_state_model.dart';
 
-class GameScreen extends ConsumerWidget {
+class GameScreen extends ConsumerStatefulWidget {
   const GameScreen({super.key, required this.theme, required this.level});
 
   final ThemeModel theme;
   final LevelModel level;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final gameState = ref.watch(gameNotifierProvider);
+  ConsumerState<GameScreen> createState() => _GameScreenState();
+}
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          Image.asset(
-            theme.gameScreenBackgroundAsset,
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-          ),
-          SafeArea(
-            child: Column(
-              children: [
-                _buildGameHud(context, gameState),
-                Expanded(
-                  child: GameBoard(level: level, theme: theme),
+class _GameScreenState extends ConsumerState<GameScreen> {
+  SoundService? _soundService;
+
+  @override
+  void initState() {
+    super.initState();
+    _soundService = ref.read(soundServiceProvider.notifier);
+    _soundService?.setMusicVolume(0.3);
+  }
+
+  @override
+  void dispose() {
+    _soundService?.setMusicVolume(1.0);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final gameState = ref.watch(gameNotifierProvider);
+    final soundServiceAsync = ref.watch(soundServiceProvider);
+
+    return soundServiceAsync.when(
+      data: (_) {
+        return Scaffold(
+          body: Stack(
+            children: [
+              Image.asset(
+                widget.theme.gameScreenBackgroundAsset,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+              ),
+              SafeArea(
+                child: Column(
+                  children: [
+                    _buildGameHud(context, gameState),
+                    Expanded(
+                      child: GameBoard(
+                        level: widget.level,
+                        theme: widget.theme,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
+      // The loading callback provides a UI to show while the Future is running.
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      // The error callback provides a UI to show if the Future fails.
+      error: (err, stack) =>
+          Scaffold(body: Center(child: Text("Error loading sounds: $err"))),
     );
   }
 
@@ -85,6 +120,30 @@ class GameScreen extends ConsumerWidget {
               ],
             ),
           ),
+
+          // Conditionally display the timer if the level has one
+          if (gameState.timerInSeconds != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.black.applyOpacity(0.3),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.timer_rounded, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${gameState.secondsRemaining ?? '--'}s',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );

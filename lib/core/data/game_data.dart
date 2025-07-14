@@ -3,6 +3,71 @@ import 'package:peek_a_pair/core/models/theme_model.dart';
 
 // This list contains all the data for every world and level in the game.
 final List<ThemeModel> allWorlds = [
+  // WORLD 0: TEST WORLD
+  ThemeModel(
+    id: 'testbed',
+    name: 'Testbed 🌲',
+    emoji: '🌲',
+    worldMapBackgroundAsset: 'assets/images/maps/forest_map_bg.png',
+    gameScreenBackgroundAsset: 'assets/images/backgrounds/forest_game_bg.png',
+    headerBannerAsset: 'assets/images/ui/header_banner_forest.png',
+    enabledNodeAsset: 'assets/images/nodes/forest_sign.png',
+    disabledNodeAsset: 'assets/images/nodes/forest_sign_disabled.png',
+    cardBackAsset: 'assets/images/cards/card_back_forest.png',
+    mascotAssetPath: 'assets/animations/ollie_mascot.gif',
+    levels: [
+      // Level 1: Remains a simple tutorial level with no twists.
+      LevelModel(
+        id: 'forest-friends_1',
+        levelNumber: 1,
+        name: 'Peek-a-Boo Grove (Normal)',
+        cardValues: ['fox', 'bear', 'rabbit'],
+        position: {'top': 500, 'left': 80},
+      ),
+
+      // Level 2: Now showcases the Move Limit twist.
+      LevelModel(
+        id: 'forest-friends_2',
+        levelNumber: 2,
+        name: 'Twilight Treehouse (Moves)',
+        cardValues: ['deer', 'owl', 'rabbit', 'bear'],
+        position: {'top': 400, 'left': 200},
+        moveLimit: 6,
+      ),
+
+      // Level 3: Now showcases the Timer twist.
+      LevelModel(
+        id: 'forest-friends_3',
+        levelNumber: 3,
+        name: 'Bouncy Burrow (Timer)',
+        cardValues: ['fox', 'bear', 'deer', 'owl'],
+        position: {'top': 300, 'left': 100},
+        timerInSeconds: 45,
+      ),
+
+      // Level 4: Now showcases the Shuffle twist.
+      LevelModel(
+        id: 'forest-friends_4',
+        levelNumber: 4,
+        name: 'The Hidden Hollow (Shuffle)',
+        cardValues: ['rabbit', 'squirrel', 'bear', 'deer'],
+        position: {'top': 200, 'left': 220},
+        hasShuffleTwist: true,
+      ),
+
+      // Level 5: Now showcases the 3-Card Match (Triplet) twist.
+      // Note: The number of cardValues must be divisible by 3.
+      LevelModel(
+        id: 'forest-friends_5',
+        levelNumber: 5,
+        name: "Ollie's Outpost (Triplets)",
+        cardValues: ['fox', 'bear', 'deer', 'owl', 'rabbit', 'squirrel'],
+        position: {'top': 100, 'left': 120},
+        isTriplet: true,
+      ),
+    ],
+  ),
+
   //============================================================================
   // WORLD 1: FOREST FRIENDS
   //============================================================================

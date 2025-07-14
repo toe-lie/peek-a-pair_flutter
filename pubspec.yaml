@@ -25,6 +25,7 @@ dependencies:
   flutter_staggered_animations: ^1.1.1
   confetti: ^0.8.0
   lottie: ^3.3.1
+  flutter_soloud: ^3.2.1
 
 dev_dependencies:
   flutter_test:
@@ -54,11 +55,15 @@ flutter:
     - assets/images/nodes/
     - assets/images/ui/
     - assets/images/cards/
+    - assets/images/cards/testbed/
     - assets/images/cards/forest-friends/
     - assets/images/cards/sweet-street/
     - assets/images/backgrounds/
     - assets/lottie/
     - assets/animations/
+    - assets/audio/
+    - assets/audio/sfx/
+    - assets/audio/music/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
