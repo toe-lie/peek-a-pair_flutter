@@ -1,4 +1,4 @@
-# peek_a_pair
+# peek-a-pair_flutter
 
 A new Flutter project.
 
