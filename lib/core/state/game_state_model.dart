@@ -1,12 +1,9 @@
 import 'package:peek_a_pair/core/models/card_model.dart';
 
-enum ShufflePhase { none, fadingOut, fadingIn }
-
 class ShuffleAnimationState {
   final Set<String> cardIds;
-  final ShufflePhase phase;
 
-  const ShuffleAnimationState({required this.cardIds, required this.phase});
+  const ShuffleAnimationState({required this.cardIds});
 }
 
 class GameState {
@@ -29,10 +26,7 @@ class GameState {
     this.secondsRemaining,
     this.isTriplet = false,
     this.isGameOver = false,
-    this.shuffleState = const ShuffleAnimationState(
-      cardIds: {},
-      phase: ShufflePhase.none,
-    ),
+    this.shuffleState = const ShuffleAnimationState(cardIds: {}),
   });
 
   GameState copyWith({

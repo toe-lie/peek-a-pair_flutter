@@ -1,0 +1,2 @@
+Asset 1: Storybook UI Background
+/imagine prompt: UI screen for a mobile game, a beautiful, magical, open storybook is the focus, the book is bound in aged leather with intricate gold leaf patterns inspired by Thai art motifs, resting on a dark, polished teak wood surface, the left and right pages are blank and made of a textured handmade paper, ready for chapter art, soft warm magical light, cinematic, photorealistic --ar 9:19.5

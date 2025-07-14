@@ -8,6 +8,7 @@ import 'package:peek_a_pair/features/game/widgets/game_card.dart';
 import 'package:peek_a_pair/features/game/widgets/win_dialog_widget.dart';
 import 'package:peek_a_pair/utils/color_extensions.dart';
 
+import '../../../core/models/card_model.dart';
 import '../../../core/models/level_model.dart';
 import '../../../core/services/sound_service.dart';
 import '../../../core/services/storage_service.dart';
@@ -28,6 +29,12 @@ class GameBoard extends ConsumerStatefulWidget {
 
 class _GameBoardState extends ConsumerState<GameBoard> {
   late ConfettiController _confettiController;
+  // A map to hold a GlobalKey for each card to find its position
+  final Map<String, GlobalKey> _cardKeys = {};
+  final GlobalKey _stackKey = GlobalKey();
+
+  // A list to hold our "ghost" animating cards
+  List<Widget> _overlayCards = [];
 
   @override
   void initState() {
@@ -58,8 +65,18 @@ class _GameBoardState extends ConsumerState<GameBoard> {
 
   @override
   Widget build(BuildContext context) {
+    final gameState = ref.watch(gameNotifierProvider);
+    for (var card in gameState.cards) {
+      _cardKeys.putIfAbsent(card.id, () => GlobalKey());
+    }
+
     // Use ref.listen to react to state changes, like showing a dialog
     ref.listen<GameState>(gameNotifierProvider, (previous, next) {
+      if (next.shuffleState.cardIds.isNotEmpty &&
+          (previous?.shuffleState.cardIds.isEmpty ?? true)) {
+        _startShuffleAnimation(next.shuffleState.cardIds);
+      }
+
       if (next.isGameWon && !(previous?.isGameWon ?? false)) {
         _confettiController.play(); // Play the confetti!
 
@@ -125,14 +142,15 @@ class _GameBoardState extends ConsumerState<GameBoard> {
       }
     });
 
-    final gameState = ref.watch(gameNotifierProvider);
     final gameCards = gameState.cards;
+    final isShuffling = gameState.shuffleState.cardIds.isNotEmpty;
 
     if (gameCards.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
     return Stack(
+      key: _stackKey,
       alignment: Alignment.topCenter,
       children: [
         AnimationLimiter(
@@ -153,29 +171,30 @@ class _GameBoardState extends ConsumerState<GameBoard> {
               itemCount: gameCards.length,
               itemBuilder: (BuildContext context, int index) {
                 final card = gameCards[index];
-                ShufflePhase currentCardPhase = ShufflePhase.none;
-                if (gameState.shuffleState.cardIds.contains(card.id)) {
-                  // If it is, its phase is whatever the global shuffle phase is.
-                  currentCardPhase = gameState.shuffleState.phase;
-                }
+                final isVisible =
+                    !isShuffling ||
+                    !gameState.shuffleState.cardIds.contains(card.id);
 
                 // Wrap each card in animation configuration and widgets
                 return AnimationConfiguration.staggeredGrid(
                   position: index,
                   duration: const Duration(milliseconds: 375),
                   columnCount: 4, // Must match crossAxisCount
-                  child: ScaleAnimation(
-                    child: FadeInAnimation(
-                      child: GameCard(
-                        key: ValueKey(card.id),
-                        card: card,
-                        theme: widget.theme,
-                        shufflePhase: currentCardPhase,
-                        onTap: () {
-                          ref
-                              .read(gameNotifierProvider.notifier)
-                              .onCardTapped(card.id);
-                        },
+                  child: Opacity(
+                    opacity: isVisible ? 1.0 : 0.0,
+                    child: ScaleAnimation(
+                      child: FadeInAnimation(
+                        child: GameCard(
+                          key: _cardKeys[card.id],
+                          card: card,
+                          theme: widget.theme,
+                          onTap: () {
+                            if (isShuffling) return;
+                            ref
+                                .read(gameNotifierProvider.notifier)
+                                .onCardTapped(card.id);
+                          },
+                        ),
                       ),
                     ),
                   ),
@@ -184,6 +203,7 @@ class _GameBoardState extends ConsumerState<GameBoard> {
             ),
           ),
         ),
+        ..._overlayCards,
         ConfettiWidget(
           confettiController: _confettiController,
           blastDirectionality: BlastDirectionality.explosive,
@@ -201,6 +221,80 @@ class _GameBoardState extends ConsumerState<GameBoard> {
           ],
         ),
       ],
+    );
+  }
+
+  void _startShuffleAnimation(Set<String> cardIds) {
+    if (cardIds.length != 2) return;
+
+    final id1 = cardIds.first;
+    final id2 = cardIds.last;
+
+    final key1 = _cardKeys[id1]!;
+    final key2 = _cardKeys[id2]!;
+
+    // Find the RenderBox of our main Stack
+    final stackBox = _stackKey.currentContext!.findRenderObject() as RenderBox;
+
+    // Find the positions of the two cards relative to the screen
+    final box1 = key1.currentContext!.findRenderObject() as RenderBox;
+    final box2 = key2.currentContext!.findRenderObject() as RenderBox;
+    final globalPos1 = box1.localToGlobal(Offset.zero);
+    final globalPos2 = box2.localToGlobal(Offset.zero);
+
+    final size1 = box1.size;
+    final size2 = box2.size;
+
+    // Convert the global positions into local positions relative to our Stack
+    final localPos1 = stackBox.globalToLocal(globalPos1);
+    final localPos2 = stackBox.globalToLocal(globalPos2);
+
+    final cardModel1 = ref
+        .read(gameNotifierProvider)
+        .cards
+        .firstWhere((c) => c.id == id1);
+    final cardModel2 = ref
+        .read(gameNotifierProvider)
+        .cards
+        .firstWhere((c) => c.id == id2);
+
+    setState(() {
+      _overlayCards = [
+        _buildGhostCard(cardModel1, localPos1, size1),
+        _buildGhostCard(cardModel2, localPos2, size2),
+      ];
+    });
+
+    // After a tiny delay, update the state again to trigger the animation
+    Future.delayed(const Duration(milliseconds: 50), () {
+      setState(() {
+        _overlayCards = [
+          _buildGhostCard(cardModel1, localPos2, size1),
+          _buildGhostCard(cardModel2, localPos1, size2),
+        ];
+      });
+    });
+
+    // After the animation, finalize the swap
+    Future.delayed(const Duration(milliseconds: 700), () {
+      ref.read(gameNotifierProvider.notifier).finalizeShuffle(id1, id2);
+      setState(() {
+        _overlayCards = [];
+      });
+    });
+  }
+
+  Widget _buildGhostCard(CardModel card, Offset position, Size size) {
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeInOut,
+      top: position.dy,
+      left: position.dx,
+      child: SizedBox(
+        width: size.width,
+        height: size.height,
+        child: GameCard(card: card, theme: widget.theme, onTap: () {}),
+      ),
     );
   }
 }

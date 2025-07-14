@@ -13,20 +13,20 @@ part 'game_notifier.g.dart';
 
 @riverpod
 class GameNotifier extends _$GameNotifier {
-  Timer? _timer;
+  Timer? _levelTimer;
   Timer? _shuffleTimer;
 
   @override
   GameState build() {
     ref.onDispose(() {
       _shuffleTimer?.cancel();
-      _timer?.cancel();
+      _levelTimer?.cancel();
     });
     return GameState();
   }
 
   void setupGame(LevelModel level, ThemeModel theme) {
-    _timer?.cancel();
+    _levelTimer?.cancel();
     _shuffleTimer?.cancel();
 
     final cardValues = level.cardValues;
@@ -65,7 +65,7 @@ class GameNotifier extends _$GameNotifier {
 
     // If the level has a timer, start the countdown
     if (level.timerInSeconds != null) {
-      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      _levelTimer = Timer.periodic(const Duration(seconds: 1), (_) {
         // Use a local variable for the current state to be safe inside the timer.
         final currentState = state;
         final currentTime = currentState.secondsRemaining;
@@ -74,7 +74,7 @@ class GameNotifier extends _$GameNotifier {
         if (currentTime == null ||
             currentState.isGameOver ||
             currentState.isGameWon) {
-          _timer?.cancel();
+          _levelTimer?.cancel();
           return;
         }
 
@@ -84,7 +84,7 @@ class GameNotifier extends _$GameNotifier {
           state = currentState.copyWith(secondsRemaining: currentTime - 1);
         } else {
           state = currentState.copyWith(isGameOver: true);
-          _timer?.cancel();
+          _levelTimer?.cancel();
         }
       });
     }
@@ -120,47 +120,9 @@ class GameNotifier extends _$GameNotifier {
 
           print('Shuffling ${card1.value} and ${card2.value}!');
 
-          // Update the state with the IDs of the cards being shuffled.
           state = state.copyWith(
-            shuffleState: ShuffleAnimationState(
-              cardIds: {card1.id, card2.id},
-              phase: ShufflePhase.fadingOut,
-            ),
+            shuffleState: ShuffleAnimationState(cardIds: {card1.id, card2.id}),
           );
-
-          // Wait for the fade-out animation to finish
-          Future.delayed(const Duration(milliseconds: 400), () {
-            // Perform the actual data swap
-            final originalIndex1 = state.cards.indexWhere(
-              (c) => c.id == card1.id,
-            );
-            final originalIndex2 = state.cards.indexWhere(
-              (c) => c.id == card2.id,
-            );
-
-            final shuffledCards = List<CardModel>.from(state.cards);
-            shuffledCards[originalIndex1] = card2;
-            shuffledCards[originalIndex2] = card1;
-
-            // Update state with swapped cards and start Fading In
-            state = state.copyWith(
-              cards: shuffledCards,
-              shuffleState: ShuffleAnimationState(
-                cardIds: {card1.id, card2.id},
-                phase: ShufflePhase.fadingIn,
-              ),
-            );
-          });
-
-          // Wait a bit longer, then reset the animation state
-          Future.delayed(const Duration(milliseconds: 800), () {
-            state = state.copyWith(
-              shuffleState: ShuffleAnimationState(
-                cardIds: {},
-                phase: ShufflePhase.none,
-              ),
-            );
-          });
         }
       });
     }
@@ -174,15 +136,18 @@ class GameNotifier extends _$GameNotifier {
         .toList();
     final tappedCard = state.cards.firstWhere((card) => card.id == cardId);
 
+    final maxFlipped = state.isTriplet ? 3 : 2;
     if (tappedCard.isMatched ||
-        flippedCards.length >= 2 ||
+        flippedCards.length >= maxFlipped ||
         flippedCards.contains(tappedCard)) {
       return;
     }
 
+    // Play flip sound
     final soundService = ref.read(soundServiceProvider.notifier);
     soundService.playSfx(SoundEffect.flip);
 
+    // Flip the tapped card
     var newCards = state.cards.map((card) {
       if (card.id == cardId) {
         return CardModel(
@@ -201,7 +166,7 @@ class GameNotifier extends _$GameNotifier {
         .where((card) => card.isFlipped && !card.isMatched)
         .toList();
 
-    if (currentlyFlipped.length == 2) {
+    if (currentlyFlipped.length == maxFlipped) {
       // Increment move count when two cards are flipped
       final newMoveCount = state.moveCount + 1;
       state = state.copyWith(moveCount: newMoveCount);
@@ -209,45 +174,48 @@ class GameNotifier extends _$GameNotifier {
       final card1 = currentlyFlipped[0];
       final card2 = currentlyFlipped[1];
 
-      if (card1.value == card2.value) {
-        soundService.playSfx(SoundEffect.match);
+      bool isMatch = false;
+      if (state.isTriplet) {
+        // --- Triplet Matching Logic ---
+        final card1 = currentlyFlipped[0];
+        final card2 = currentlyFlipped[1];
+        final card3 = currentlyFlipped[2];
+        isMatch = (card1.value == card2.value) && (card2.value == card3.value);
+      } else {
+        // --- Pair Matching Logic
+        final card1 = currentlyFlipped[0];
+        final card2 = currentlyFlipped[1];
+        isMatch = card1.value == card2.value;
+      }
 
+      if (isMatch) {
+        soundService.playSfx(SoundEffect.match);
+        final matchedIds = currentlyFlipped.map((c) => c.id).toSet();
         newCards = state.cards.map((card) {
-          if (card.id == card1.id || card.id == card2.id) {
-            return CardModel(
-              id: card.id,
-              value: card.value,
-              imagePath: card.imagePath,
-              isFlipped: true,
-              isMatched: true,
-            );
+          if (matchedIds.contains(card.id)) {
+            return card.copyWith(isMatched: true);
           }
           return card;
         }).toList();
 
-        // Check for a win after a successful match
         final isGameWon = newCards.every((card) => card.isMatched);
         if (isGameWon) {
-          _timer?.cancel();
+          _levelTimer?.cancel();
           _shuffleTimer?.cancel();
         }
         state = state.copyWith(cards: newCards, isGameWon: isGameWon);
       } else {
         soundService.playSfx(SoundEffect.mismatch);
-        Future.delayed(const Duration(milliseconds: 800), () {
-          newCards = state.cards.map((card) {
-            if (card.id == card1.id || card.id == card2.id) {
-              return CardModel(
-                id: card.id,
-                value: card.value,
-                imagePath: card.imagePath,
-                isFlipped: false,
-                isMatched: false,
-              );
+        final flippedIds = currentlyFlipped.map((c) => c.id).toSet();
+        Future.delayed(const Duration(milliseconds: 1000), () {
+          final currentCards = state.cards;
+          final flippedBackCards = currentCards.map((card) {
+            if (flippedIds.contains(card.id)) {
+              return card.copyWith(isFlipped: false);
             }
             return card;
           }).toList();
-          state = state.copyWith(cards: newCards);
+          state = state.copyWith(cards: flippedBackCards);
         });
       }
 
@@ -258,5 +226,24 @@ class GameNotifier extends _$GameNotifier {
         state = state.copyWith(isGameOver: true);
       }
     }
+  }
+
+  void finalizeShuffle(String id1, String id2) {
+    final originalIndex1 = state.cards.indexWhere((c) => c.id == id1);
+    final originalIndex2 = state.cards.indexWhere((c) => c.id == id2);
+
+    if (originalIndex1 == -1 || originalIndex2 == -1) return; // Safety check
+
+    final shuffledCards = List<CardModel>.from(state.cards);
+    final card1 = state.cards[originalIndex1];
+    final card2 = state.cards[originalIndex2];
+    shuffledCards[originalIndex1] = card2;
+    shuffledCards[originalIndex2] = card1;
+
+    // Update state with shuffled cards and clear the animation state
+    state = state.copyWith(
+      cards: shuffledCards,
+      shuffleState: const ShuffleAnimationState(cardIds: {}),
+    );
   }
 }

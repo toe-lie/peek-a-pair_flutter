@@ -19,4 +19,20 @@ class CardModel {
     this.isFlipped = false,
     this.isMatched = false,
   });
+
+  CardModel copyWith({
+    String? id,
+    String? value,
+    String? imagePath,
+    bool? isFlipped,
+    bool? isMatched,
+  }) {
+    return CardModel(
+      id: id ?? this.id,
+      value: value ?? this.value,
+      imagePath: imagePath ?? this.imagePath,
+      isFlipped: isFlipped ?? this.isFlipped,
+      isMatched: isMatched ?? this.isMatched,
+    );
+  }
 }

@@ -9,14 +9,12 @@ import '../../../core/state/game_state_model.dart'; // Import our extension
 class GameCard extends StatefulWidget {
   final CardModel card;
   final ThemeModel theme;
-  final ShufflePhase shufflePhase;
   final VoidCallback onTap;
 
   const GameCard({
     super.key,
     required this.card,
     required this.theme,
-    required this.shufflePhase,
     required this.onTap,
   });
 
@@ -58,38 +56,27 @@ class _GameCardState extends State<GameCard>
 
   @override
   Widget build(BuildContext context) {
-    double opacity = 1.0;
-    if (widget.shufflePhase == ShufflePhase.fadingOut) {
-      opacity = 0.0;
-    } else if (widget.shufflePhase == ShufflePhase.fadingIn) {
-      opacity = 1.0;
-    }
+    return GestureDetector(
+      onTap: widget.onTap, // Use the callback passed from the parent
+      child: AnimatedBuilder(
+        animation: _animation,
+        builder: (BuildContext context, Widget? child) {
+          final angle = _animation.value * pi;
 
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 400),
-      opacity: opacity,
-      child: GestureDetector(
-        onTap: widget.onTap, // Use the callback passed from the parent
-        child: AnimatedBuilder(
-          animation: _animation,
-          builder: (BuildContext context, Widget? child) {
-            final angle = _animation.value * pi;
+          final Widget childToShow = angle < pi / 2
+              ? _buildCardSide("back") // The card back
+              : Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.rotationY(pi),
+                  child: _buildCardSide("front"), // The card front
+                );
 
-            final Widget childToShow = angle < pi / 2
-                ? _buildCardSide("back") // The card back
-                : Transform(
-                    alignment: Alignment.center,
-                    transform: Matrix4.rotationY(pi),
-                    child: _buildCardSide("front"), // The card front
-                  );
-
-            return Transform(
-              transform: Matrix4.rotationY(angle),
-              alignment: Alignment.center,
-              child: childToShow,
-            );
-          },
-        ),
+          return Transform(
+            transform: Matrix4.rotationY(angle),
+            alignment: Alignment.center,
+            child: childToShow,
+          );
+        },
       ),
     );
   }
